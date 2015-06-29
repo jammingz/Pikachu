@@ -25,7 +25,7 @@ public class ApacheXmlParser {
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true);
             parser.setInput(in, null);
             parser.nextTag();
-            return readFeed(parser);
+            return readFeed(parser); // returns a list of rthreads
         } finally {
             in.close();
         }
@@ -64,7 +64,7 @@ public class ApacheXmlParser {
 */
 
     private List<RThread> readFeed(XmlPullParser parser) throws XmlPullParserException, IOException {
-        List rthread = new ArrayList();
+        List rthreads = new ArrayList(); // List of rthreads
 
         parser.require(XmlPullParser.START_TAG, ns, "feed");
         while (parser.next() != XmlPullParser.END_TAG) {
@@ -73,13 +73,13 @@ public class ApacheXmlParser {
             }
             String name = parser.getName();
             // Starts by looking for the message tag
-            if (name.equals("message")) {
-                rthread.add(readRThread(parser));
+            if (name.equals("thread")) {
+                rthreads.add(readRThread(parser)); // adds a rthread into the list of rthreads
             } else {
                 skip(parser);
             }
         }
-        return rthread;
+        return rthreads;
     }
 
 

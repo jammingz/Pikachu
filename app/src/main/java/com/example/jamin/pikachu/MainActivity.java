@@ -14,6 +14,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.w3c.dom.Text;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
@@ -26,14 +27,22 @@ import java.util.List;
 
 public class MainActivity extends ListActivity {
 
-    // Test Variables
     private RThreadDatabase rThreadDatabase;
     public static final String EXTRA_MESSAGE = "com.example.pikachu.jamin.MESSAGE";
+    private static final String TARGET_LINK = "http://107.200.40.169:82/";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        rThreadDatabase = new RThreadDatabase();
         setContentView(R.layout.activity_main);
+
+        // Read pikachu.xml from server
+        Log.i("Status","Preparing to Fetch Xml");
+        new ReadMainPageTask().execute(TARGET_LINK + "pikachu.xml");
+        Log.i("Status","Fetched Xml Complete");
+        Toast.makeText(this,"Reading from Server",Toast.LENGTH_SHORT);
+
         setListAdapter(new CustomAdapter());
         ListView lView = (ListView) findViewById(android.R.id.list);
 
@@ -75,6 +84,12 @@ public class MainActivity extends ListActivity {
             }
 
             //((TextView) convertView.findViewById(R.id.list_row_main_body)).setText(getItem(position));
+
+            RThread curRThread = rThreadDatabase.getRThread(position);
+            TextView score = (TextView) convertView.findViewById(R.id.list_row_main_score);
+            TextView body = (TextView) convertView.findViewById(R.id.list_row_main_body);
+            score.setText(String.valueOf(curRThread.getScore()));
+            body.setText(curRThread.getTitle());
             return convertView;
         }
 
@@ -110,7 +125,7 @@ public class MainActivity extends ListActivity {
                 is = conn.getInputStream();
 
                 // Convert the InputStream into messages
-                results = parser.parse(is);
+                results = parser.parse(is); // results is a list of rthreads
 
 
                 // Makes sure that the InputStream is closed after the app is
@@ -145,16 +160,19 @@ public class MainActivity extends ListActivity {
             // TextView status = (TextView) findViewById(R.id.status);
             // status.setText(responseCode);
             if (responseCodeInt == 200) { // Parse xml only if status is 200/OK
-                TextView messageField = (TextView) findViewById(R.id.message);
-                String messageContent = "";
-                String messageRow = "";
-                for (int i = 1; i < args.size(); i++) {
-                    RThread curRThread = (RThread)args.get(i);
-                    messageRow = curMessage.user + "(" + curMessage.timestamp + "): " + curMessage.content + "\n";
-                    messageContent += messageRow;
-                }
+                Log.i("Connection Status","Connected");
+                // If data has been received, we input the cache the data into our database
 
-                messageField.setText(messageContent);
+                // First we wipe out any old data in the database
+                rThreadDatabase = new RThreadDatabase();
+
+                for (int i = 1; i < args.size(); i++) { // Iterate through all the RThreads and add each rthread into database
+                    RThread curRThread = (RThread) args.get(i);
+                    rThreadDatabase.insertRThread(curRThread);
+                    Log.i("Adding Rthread","Rthread: #" + String.valueOf(i));
+                }
+            } else {
+                Log.i("Connection Status","Failed");
             }
         }
 

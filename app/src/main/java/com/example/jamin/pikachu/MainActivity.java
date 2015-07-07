@@ -1,16 +1,25 @@
 package com.example.jamin.pikachu;
 
+import android.annotation.SuppressLint;
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.ListActivity;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.Point;
+import android.media.Image;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Display;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -29,7 +38,9 @@ public class MainActivity extends ListActivity {
 
     private RThreadDatabase rThreadDatabase;
     public static final String EXTRA_MESSAGE = "com.example.pikachu.jamin.MESSAGE";
+    public static final String EXTRA_TITLE = "com.example.pikachu.jamin.TITLE";
     private static final String TARGET_LINK = "http://107.200.40.169:82/";
+    private CustomAdapter mAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,12 +49,14 @@ public class MainActivity extends ListActivity {
         setContentView(R.layout.activity_main);
 
         // Read pikachu.xml from server
-        Log.i("Status","Preparing to Fetch Xml");
+        Log.i("Status", "Preparing to Fetch Xml");
         new ReadMainPageTask().execute(TARGET_LINK + "pikachu.xml");
-        Log.i("Status","Fetched Xml Complete");
+        Log.i("Status", "Fetched Xml Complete");
         Toast.makeText(this,"Reading from Server",Toast.LENGTH_SHORT);
 
-        setListAdapter(new CustomAdapter());
+        // Create ListView Adapter
+        mAdapter = new CustomAdapter();
+        setListAdapter(mAdapter);
         ListView lView = (ListView) findViewById(android.R.id.list);
 
 
@@ -51,8 +64,11 @@ public class MainActivity extends ListActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Intent intent = new Intent(getApplicationContext(),DisplayMessageActivity.class);
-                String message = "Position: " + String.valueOf(position);
+                TextView titleView = (TextView) view.findViewById(R.id.list_row_main_title);
+                String title = titleView.getText().toString();//"Position: " + String.valueOf(position);
+                String message = "001";// SAMPLE hash
                 //based on item add info to intent
+                intent.putExtra(EXTRA_TITLE,title);
                 intent.putExtra(EXTRA_MESSAGE,message);
                 startActivity(intent);
             }
@@ -77,19 +93,94 @@ public class MainActivity extends ListActivity {
             return rThreadDatabase.getRThread(position).hashCode();
         }
 
+        @SuppressLint("ResourceAsColor")
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
             if (convertView == null) {
-                convertView = getLayoutInflater().inflate(R.layout.list_row_main,parent,false);
+                 convertView = getLayoutInflater().inflate(R.layout.list_row_main,parent,false);
+
             }
 
+
+            // Getting height of the screen
+            Display display = getWindowManager().getDefaultDisplay();
+            Point size = new Point();
+            display.getSize(size);
+
+            int screenHeight = size.y;//parent.getMeasuredHeight();
+            int screenWidth = size.x;//parent.getMeasuredWidth();
+            int rowHeight = screenHeight/10; // Lets try 8 rows for the screen
+            int rowWidth = screenWidth;
+
+            // Formatting the listView
+
+            convertView.getLayoutParams().height = rowHeight;
+            convertView.setBackgroundColor(Color.CYAN);
+
+            TextView score = (TextView) convertView.findViewById(R.id.list_row_main_score);
+            ImageView avatar = (ImageView) convertView.findViewById(R.id.list_row_main_avatar);
+            TextView title = (TextView) convertView.findViewById(R.id.list_row_main_title);
+            TextView comments = (TextView) convertView.findViewById(R.id.list_row_main_comments);
+            TextView placeholder = (TextView) convertView.findViewById(R.id.list_row_main_comments_placeholder);
+            RelativeLayout rLayout = (RelativeLayout) convertView.findViewById(R.id.list_row_main_right_layout);
+
+            int scoreWidth = (int) (0.1 * rowWidth);
+            int scoreHeight = rowHeight;
+
+            int avatarWidth = rowHeight;
+            int avatarHeight = rowHeight;
+
+            int rLayoutWidth = rowWidth - scoreWidth - avatarWidth;
+            int rLayoutHeight = screenHeight;
+
+            int titleWidth = rLayoutWidth;
+            // int titleHeight = (int) (0.75 * rowHeight);
+
+            //int commentsHeight = (int) (0.25 * rowHeight);
+
+            //int placeholderHeight = commentsHeight;
+
+            score.getLayoutParams().width = scoreWidth;
+            score.getLayoutParams().height = scoreHeight;
+
+            avatar.getLayoutParams().width = avatarWidth;
+            avatar.getLayoutParams().height = avatarHeight;
+
+            rLayout.getLayoutParams().width = rLayoutWidth;
+            rLayout.getLayoutParams().height = rLayoutHeight;
+
+            title.getLayoutParams().width = titleWidth;
+            //title.getLayoutParams().height = titleHeight;
+
+            //comments.getLayoutParams().height = commentsHeight;
+
+            //placeholder.getLayoutParams().height = placeholderHeight;
+
+            avatar.setBackgroundColor(Color.GREEN);
+
+            // Substituting the strings into the coressponding fields
+            RThread curRThread = rThreadDatabase.getRThread(position);
+            int scoreVal = curRThread.getScore();
+            if (scoreVal > 9999) {
+                scoreVal = 9999; // set score to 9999 if overflowed
+            }
+
+            score.setText(String.valueOf(scoreVal));
+            title.setText(curRThread.getTitle());
+            comments.setText(String.valueOf(curRThread.getCommentNum()));
+
+            /*
             //((TextView) convertView.findViewById(R.id.list_row_main_body)).setText(getItem(position));
 
             RThread curRThread = rThreadDatabase.getRThread(position);
             TextView score = (TextView) convertView.findViewById(R.id.list_row_main_score);
-            TextView body = (TextView) convertView.findViewById(R.id.list_row_main_body);
+            TextView title = (TextView) convertView.findViewById(R.id.list_row_main_title);
             score.setText(String.valueOf(curRThread.getScore()));
-            body.setText(curRThread.getTitle());
+            title.setText(curRThread.getTitle());
+            //convertView.setBackgroundColor(R.color.red);
+            //ImageView avatar = (ImageView) convertView.findViewById(R.id.list_row_main_avatar);
+            //avatar.setLayoutParams(new LinearLayout.LayoutParams(avatar.getMeasuredHeight(),avatar.getMeasuredHeight())); // Making the imageview square shaped
+            */
             return convertView;
         }
 
@@ -171,6 +262,7 @@ public class MainActivity extends ListActivity {
                     rThreadDatabase.insertRThread(curRThread);
                     Log.i("Adding Rthread","Rthread: #" + String.valueOf(i));
                 }
+                mAdapter.notifyDataSetChanged(); // refresh view after data is fetched into database
             } else {
                 Log.i("Connection Status","Failed");
             }

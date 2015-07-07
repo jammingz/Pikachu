@@ -4,67 +4,34 @@ import android.util.Xml;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
-import org.xmlpull.v1.XmlSerializer;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by jamin on 6/18/15.
+ * Created by jamin on 7/6/15.
  */
-public class ApacheXmlParser {
+public class ApacheDetailedXmlParser {
     // We don't use namespaces
     private static final String ns = null;
 
-    public List<RThread> parse(InputStream in) throws XmlPullParserException, IOException {
+    public List parse(InputStream in) throws XmlPullParserException, IOException {
         try {
             XmlPullParser parser = Xml.newPullParser();
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true);
             parser.setInput(in, null);
             parser.nextTag();
-            return readFeed(parser); // returns a list of rthreads
+            return readFeed(parser); // returns a tree of comments into an arraylist but with the first index being the body of the message
         } finally {
             in.close();
         }
     }
 
-/*   **Do not need method. We are not writing to server
-
-    public static String toXmlString(Message message) {
-        XmlSerializer serializer = Xml.newSerializer();
-        StringWriter writer = new StringWriter();
-        String namespace = "ns0:";
-        try {
-            serializer.setOutput(writer);
-            serializer.startDocument("UTF-8", true);
-            serializer.startTag("", namespace + "feed");
-            serializer.attribute("", "xmlns:ns0", "http://somewhere.com/");
-            serializer.startTag("", namespace + "message");
-            serializer.startTag("", namespace + "user");
-            serializer.text(message.user);
-            serializer.endTag("", namespace + "user");
-            serializer.startTag("", namespace + "timestamp");
-            serializer.text(message.timestamp);
-            serializer.endTag("", namespace + "timestamp");
-            serializer.startTag("", namespace + "content");
-            serializer.attribute("", "type", "text");
-            serializer.text(message.content);
-            serializer.endTag("", namespace + "content");
-            serializer.endTag("", namespace + "message");
-            serializer.endTag("", namespace + "feed");
-            serializer.endDocument();
-            return writer.toString();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-*/
-
-    private List<RThread> readFeed(XmlPullParser parser) throws XmlPullParserException, IOException {
-        List rthreads = new ArrayList(); // List of rthreads
+    private List readFeed(XmlPullParser parser) throws XmlPullParserException, IOException {
+        List results = new ArrayList();
 
         parser.require(XmlPullParser.START_TAG, ns, "feed");
         while (parser.next() != XmlPullParser.END_TAG) {
@@ -73,15 +40,52 @@ public class ApacheXmlParser {
             }
             String name = parser.getName();
             // Starts by looking for the message tag
-            if (name.equals("thread")) {
-                rthreads.add(readRThread(parser)); // adds a rthread into the list of rthreads
+            if (name.equals("body")) {
+                results.add(readBody(parser)); // adds the body string into arraylist
+            } else if (name.equals("comments")) {
+                readComments(parser,results);
             } else {
                 skip(parser);
             }
         }
-        return rthreads;
+        return results;
     }
 
+    // Returns the content of the body as a String
+    private String readBody(XmlPullParser parser) throws XmlPullParserException, IOException {
+        parser.require(XmlPullParser.START_TAG, ns, "body");
+        String body = readText(parser);
+        parser.require(XmlPullParser.END_TAG, ns, "body");
+        return body;
+    }
+
+    // Parses through the tree of comments and inserts it into the arraylist
+    private void readComments(XmlPullParser parser, List lst) throws XmlPullParserException, IOException {
+        if (parser.getEventType() != XmlPullParser.START_TAG) {
+            throw new IllegalStateException();
+        }
+        ArrayList<ArrayList> referenceList = new ArrayList<ArrayList>();
+        CommentNode root = new CommentNode(null); // this is the root node
+
+        // Initialize first start tag
+        int depth = 1;
+        if (parser.next() != XmlPullParser.START_TAG) {
+            return; // if the first tag is not a start tag, we messed up. abort mission
+        }
+
+        CommentNode curNode = root; // Lets begin the iterations.
+
+        while (depth != 0) {
+            switch (parser.next()) {
+                case XmlPullParser.END_TAG:
+                    depth--;
+                    break;
+                case XmlPullParser.START_TAG:
+                    depth++;
+                    break;
+            }
+        }
+    }
 
 
     // Parses the contents of an message. If it encounters a user, timestamp, or link tag, hands them off

@@ -8,14 +8,16 @@ public class RThread { // reddit thread
     private String timestamp;
     private String title;
     private int score;
+    private int commentNum;
     private int id;
 
-    public RThread(String user, String timestamp, String title, int score, int id) {
+    public RThread(String user, String timestamp, String title, int score, int num, int id) {
         this.user = user;
         this.timestamp = timestamp;
         this.title = title;
         this.score = score;
         this.id = id;
+        this.commentNum = num;
     }
 
     public String getUser() {
@@ -36,5 +38,9 @@ public class RThread { // reddit thread
 
     public int getId() {
         return id;
+    }
+
+    public int getCommentNum() {
+        return commentNum;
     }
 }

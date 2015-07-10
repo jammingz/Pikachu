@@ -23,6 +23,8 @@ import java.util.List;
 public class DisplayMessageActivity extends AppCompatActivity {
     private String bodyMessage; // Stores the message
     private ArrayList commentDatabase; // Stores the chain of comments
+    private CommentTree commentDatabaseTest; // test
+    private TextView testView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,6 +32,7 @@ public class DisplayMessageActivity extends AppCompatActivity {
 
         // Initializing database
         commentDatabase = new ArrayList();
+        commentDatabaseTest = new CommentTree(null);
 
         // Getting message from intent
         Intent intent = getIntent();
@@ -40,11 +43,13 @@ public class DisplayMessageActivity extends AppCompatActivity {
         setTitle(title);
 
         // Creating the TextView with the message
-        TextView textView = new TextView(this);
-        textView.setText(message);
+        testView = new TextView(this);
+        testView.setText(message);
+
+        new ReadDetailedPageTask().execute(MainActivity.TARGET_LINK + "samplethread.xml");
 
         // Setting the texteview onto context
-        setContentView(textView);
+        setContentView(testView);
     }
 
     /* Read information for detailed thread page. Reads xml file from server */
@@ -59,7 +64,7 @@ public class DisplayMessageActivity extends AppCompatActivity {
             // Only display the first 500 characters of the retrieved
             // web page content.
             int len = 500;
-            ApacheXmlParser parser = new ApacheXmlParser();
+            ApacheDetailedXmlParser parser = new ApacheDetailedXmlParser();
             int responseCode = -1;
             List results = new ArrayList();
 
@@ -116,13 +121,27 @@ public class DisplayMessageActivity extends AppCompatActivity {
 
                 // First we wipe out any old data in the database
                 commentDatabase = new ArrayList();
+                commentDatabaseTest = new CommentTree(null);
 
                 bodyMessage = (String) args.get(1); // Getting body message. WARNING: ADDRESS NULL STRING LATER
 
+                /*
                 for (int i = 2; i < args.size(); i++) { // Iterate through all the comments and its children and insert into database
                     commentDatabase.add(args.get(i));
                     Log.i("Adding Comment Node","Node: #" + String.valueOf(i));
                 }
+                */
+                commentDatabaseTest = (CommentTree) args.get(2);
+                Log.i("Adding Comment Node","Node:test");
+
+                String messageToDisplay = "";
+                if (commentDatabaseTest.getSize() == 0) {
+                    messageToDisplay = "databasesize = 0";
+                } else {
+                    messageToDisplay = "yolo: " + commentDatabaseTest.getRoot().getSize() + " Comment" + bodyMessage;//commentDatabaseTest.getRoot().getChildren().get(0).getMessage();
+                }
+                testView.setText(messageToDisplay);
+
 
             } else {
                 Log.i("Connection Status-2","Failed");

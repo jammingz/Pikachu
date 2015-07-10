@@ -39,7 +39,7 @@ public class MainActivity extends ListActivity {
     private RThreadDatabase rThreadDatabase;
     public static final String EXTRA_MESSAGE = "com.example.pikachu.jamin.MESSAGE";
     public static final String EXTRA_TITLE = "com.example.pikachu.jamin.TITLE";
-    private static final String TARGET_LINK = "http://107.200.40.169:82/";
+    protected static final String TARGET_LINK = "http://107.200.40.169:81/";
     private CustomAdapter mAdapter;
 
     @Override

@@ -1,5 +1,6 @@
 package com.example.jamin.pikachu;
 
+import android.util.Log;
 import android.util.Xml;
 
 import org.xmlpull.v1.XmlPullParser;
@@ -34,6 +35,7 @@ public class ApacheDetailedXmlParser {
         List results = new ArrayList();
 
         parser.require(XmlPullParser.START_TAG, ns, "feed");
+        Log.i("Executing", "readFeed()");
         while (parser.next() != XmlPullParser.END_TAG) {
             if (parser.getEventType() != XmlPullParser.START_TAG) {
                 continue;
@@ -43,7 +45,7 @@ public class ApacheDetailedXmlParser {
             if (name.equals("body")) {
                 results.add(readBody(parser)); // adds the body string into arraylist
             } else if (name.equals("comments")) {
-                readComments(parser,results);
+                results.add(readComments(parser, results));
             } else {
                 skip(parser);
             }
@@ -53,6 +55,7 @@ public class ApacheDetailedXmlParser {
 
     // Returns the content of the body as a String
     private String readBody(XmlPullParser parser) throws XmlPullParserException, IOException {
+        Log.i("Executing", "readBody()");
         parser.require(XmlPullParser.START_TAG, ns, "body");
         String body = readText(parser);
         parser.require(XmlPullParser.END_TAG, ns, "body");
@@ -60,21 +63,45 @@ public class ApacheDetailedXmlParser {
     }
 
     // Parses through the tree of comments and inserts it into the arraylist
-    private void readComments(XmlPullParser parser, List lst) throws XmlPullParserException, IOException {
+    private CommentTree readComments(XmlPullParser parser, List lst) throws XmlPullParserException, IOException {
+        Log.i("Executing", "readComments()");
+        /*
         if (parser.getEventType() != XmlPullParser.START_TAG) {
             throw new IllegalStateException();
         }
+        */
         ArrayList<ArrayList> referenceList = new ArrayList<ArrayList>();
         CommentNode root = new CommentNode(null); // this is the root node
 
         // Initialize first start tag
         int depth = 1;
+        /*
         if (parser.next() != XmlPullParser.START_TAG) {
-            return; // if the first tag is not a start tag, we messed up. abort mission
+            Log.i("Parser.readComments()","Error");
+            return null; // if the first tag is not a start tag, we messed up. abort mission
         }
+        */
 
         CommentNode curNode = root; // Lets begin the iterations.
 
+        // For testing purpose. we'll see what happens when we get text and put it in the Child Node's body message
+        String results = "{Flag: ";
+        if (parser.next() == XmlPullParser.TEXT) {
+            results += "Yes}  ";
+        } else {
+            results += "No}  ";
+        }
+
+        results += parser.getText();
+        parser.nextTag();
+
+
+        CommentNode testNode = new CommentNode("test",0,results,root);
+
+        CommentTree commentTree = new CommentTree(root);
+        return commentTree;
+
+        /*
         while (depth != 0) {
             switch (parser.next()) {
                 case XmlPullParser.END_TAG:
@@ -85,6 +112,7 @@ public class ApacheDetailedXmlParser {
                     break;
             }
         }
+        */
     }
 
 

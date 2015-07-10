@@ -39,5 +39,11 @@ public class CommentNode {
         return size;
     }
 
+    public String getMessage() { return message; }
+
+    public ArrayList<CommentNode> getChildren() { return children; }
+
+    public CommentNode getParent() { return parent; }
+
 }
 

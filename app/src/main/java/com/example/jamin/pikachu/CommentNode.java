@@ -27,6 +27,7 @@ public class CommentNode {
         this.score = score;
         this.message = message;
         this.parent = parent;
+        children = new ArrayList<CommentNode>();
         size = 0;
     }
 

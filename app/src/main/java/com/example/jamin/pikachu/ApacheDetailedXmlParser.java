@@ -71,10 +71,13 @@ public class ApacheDetailedXmlParser {
         }
         */
         ArrayList<ArrayList> referenceList = new ArrayList<ArrayList>();
-        CommentNode root = new CommentNode(null); // this is the root node
+        CommentNode root = new CommentNode("root",0,"root",null); // new CommentNode(null); // this is the root node
 
+
+        CommentTree commentTree = new CommentTree(root);
         // Initialize first start tag
         int depth = 1;
+        int lastDepth = 1;
         /*
         if (parser.next() != XmlPullParser.START_TAG) {
             Log.i("Parser.readComments()","Error");
@@ -83,36 +86,64 @@ public class ApacheDetailedXmlParser {
         */
 
         CommentNode curNode = root; // Lets begin the iterations.
-
+        String results = "<" + parser.getName() + ">";
         // For testing purpose. we'll see what happens when we get text and put it in the Child Node's body message
-        String results = "{Flag: ";
-        if (parser.next() == XmlPullParser.TEXT) {
-            results += "Yes}  ";
-        } else {
-            results += "No}  ";
-        }
 
-        results += parser.getText();
-        parser.nextTag();
-
-
-        CommentNode testNode = new CommentNode("test",0,results,root);
-
-        CommentTree commentTree = new CommentTree(root);
-        return commentTree;
-
-        /*
         while (depth != 0) {
             switch (parser.next()) {
                 case XmlPullParser.END_TAG:
                     depth--;
+                    curNode = curNode.getParent(); // Go up a depth in the tree.
+                    if (depth == 0) {
+                        break; // We dont add the end tag for comments. We exit loop
+                    }
+                    //results += "</" + parser.getName() + ">";
                     break;
                 case XmlPullParser.START_TAG:
+                    // If this is a start tag. we need to determine if it is a comment tag
+                    if (!parser.getName().trim().equals("comment")) {
+                        skip(parser); // Should never apprach here. If we get here, we need to throw error
+                        Log.e("ERROR","started with non-comment tag");
+                        break;
+                    }
+
+                    // Extracting attribute values from the start-comment tag
+                    int commentScore = Integer.valueOf(parser.getAttributeValue(ns,"score"));
+                    String user = parser.getAttributeValue(ns,"user");
+
+                    parser.next(); // Skip to the message tag
+                    if (!parser.getName().trim().equals("message")) {
+                        skip(parser); // Should never apprach here. If we get here, we need to throw error
+                        Log.e("ERROR","started with non-message tag");
+                        break;
+                    }
+
+                    parser.next(); // Skip to the message string
+                    String messageString = parser.getText();
+                    parser.next(); // Skip to end of message tag
+
+                    // Update Nodes
+                    CommentNode child = new CommentNode(user,commentScore,messageString,curNode);
+                    curNode.addChild(child);
+                    curNode = child;
                     depth++;
+                    // results += "<" + parser.getName() + ">";
+                    break;
+                case XmlPullParser.TEXT:
+                    String tagText = parser.getText();
+                    if (tagText.trim().length() > 0) {
+                        Log.e("ERROR","parser.text? how??"); // Should never reach here. Reach here if there is text outside of message tag and is NOT whitespace
+                    } else {
+                        continue; // current text is whitespace. continue to next tag element
+                    }
                     break;
             }
         }
-        */
+
+        CommentNode testNode = new CommentNode("test",0,results,root);
+        //root.addChild(testNode);
+        return commentTree;
+
     }
 
 

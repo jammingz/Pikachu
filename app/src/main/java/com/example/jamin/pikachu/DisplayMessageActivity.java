@@ -14,16 +14,20 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
+import java.util.Stack;
 
 /**
  * Created by jamin on 6/17/15.
  */
 public class DisplayMessageActivity extends AppCompatActivity {
     private String bodyMessage; // Stores the message
-    private ArrayList commentDatabase; // Stores the chain of comments
-    private CommentTree commentDatabaseTest; // test
+    private CommentTree commentDatabase; // Stores the chain of comments in a tree
     private TextView testView;
 
     @Override
@@ -31,8 +35,7 @@ public class DisplayMessageActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         // Initializing database
-        commentDatabase = new ArrayList();
-        commentDatabaseTest = new CommentTree(null);
+        commentDatabase = new CommentTree(null);
 
         // Getting message from intent
         Intent intent = getIntent();
@@ -46,7 +49,7 @@ public class DisplayMessageActivity extends AppCompatActivity {
         testView = new TextView(this);
         testView.setText(message);
 
-        new ReadDetailedPageTask().execute(MainActivity.TARGET_LINK + "samplethread.xml");
+        new ReadDetailedPageTask().execute(MainActivity.TARGET_LINK + "samplethread2.xml");
 
         // Setting the texteview onto context
         setContentView(testView);
@@ -120,8 +123,7 @@ public class DisplayMessageActivity extends AppCompatActivity {
                 // If data has been received, we input the cache the data into our database
 
                 // First we wipe out any old data in the database
-                commentDatabase = new ArrayList();
-                commentDatabaseTest = new CommentTree(null);
+                commentDatabase = new CommentTree(null);
 
                 bodyMessage = (String) args.get(1); // Getting body message. WARNING: ADDRESS NULL STRING LATER
 
@@ -131,14 +133,14 @@ public class DisplayMessageActivity extends AppCompatActivity {
                     Log.i("Adding Comment Node","Node: #" + String.valueOf(i));
                 }
                 */
-                commentDatabaseTest = (CommentTree) args.get(2);
-                Log.i("Adding Comment Node","Node:test");
+                commentDatabase = (CommentTree) args.get(2);
+                Log.i("Adding Comment Tree","Node:root");
 
                 String messageToDisplay = "";
-                if (commentDatabaseTest.getSize() == 0) {
+                if (commentDatabase.getSize() == 0) {
                     messageToDisplay = "databasesize = 0";
                 } else {
-                    messageToDisplay = "yolo: " + commentDatabaseTest.getRoot().getSize() + " Comment" + bodyMessage;//commentDatabaseTest.getRoot().getChildren().get(0).getMessage();
+                    messageToDisplay = formatTree(commentDatabase,10); // generic max depth of 10. *** CHANGE LATER ***
                 }
                 testView.setText(messageToDisplay);
 
@@ -146,6 +148,43 @@ public class DisplayMessageActivity extends AppCompatActivity {
             } else {
                 Log.i("Connection Status-2","Failed");
             }
+        }
+
+        // Turns the tree database into a readable string. We only look into a depth of maxDepth
+        private String formatTree(CommentTree tree, int maxDepth) {
+            String results = ""; // This will be the string we return
+            Stack<CommentNode> stack = new Stack<CommentNode>(); // We use a queue to implement depth first search.
+            Stack<Integer> depthStack = new Stack<Integer>(); // Keeps track of depth levels for each node
+
+            int curDepth = 0;
+
+            // Now we insert the tree nodes into the stack
+            CommentNode root = tree.getRoot();
+            stack.add(root);
+            depthStack.add(curDepth);
+            while(stack.size() > 0 && curDepth < maxDepth) { // while the stack is not empty and is less than the desired max depth
+                CommentNode curNode = stack.pop();
+                curDepth = depthStack.pop();
+
+                // We dont have to worry about cyclical graph since it's impossible.
+                // First, we add the children (if any) to the stack
+                for (int i = 0; i < curNode.getSize(); i++) {
+                    stack.add(curNode.getChildren().get(i)); // Add each child into the stack
+                    depthStack.add(curDepth+1);
+                }
+
+                if (curDepth == 0) {
+                    continue; // We skip parsing info from the root node of the tree.
+                }
+
+                results += numTabs(curDepth-1) + " <" + curNode.getMessage() + ">\n "; // Otherwise, we parse the information from the node if it is not node
+            }
+            return results;
+        }
+
+        private String numTabs(int n) {
+            String eachTab = "   "; // Three spaces = 1 tab
+            return new String(new char[n]).replace("\0", eachTab); // each tab is multiplied n times
         }
 
 

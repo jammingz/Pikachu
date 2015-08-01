@@ -71,7 +71,7 @@ public class ApacheDetailedXmlParser {
         }
         */
         ArrayList<ArrayList> referenceList = new ArrayList<ArrayList>();
-        CommentNode root = new CommentNode("root",0,"root",null); // new CommentNode(null); // this is the root node
+        CommentNode root = new CommentNode("root",0,"root",null,0); // new CommentNode(null); // this is the root node
 
 
         CommentTree commentTree = new CommentTree(root);
@@ -87,6 +87,8 @@ public class ApacheDetailedXmlParser {
 
         CommentNode curNode = root; // Lets begin the iterations.
         String results = "<" + parser.getName() + ">";
+        int curIndex = 0;
+
         // For testing purpose. we'll see what happens when we get text and put it in the Child Node's body message
 
         while (depth != 0) {
@@ -97,7 +99,6 @@ public class ApacheDetailedXmlParser {
                     if (depth == 0) {
                         break; // We dont add the end tag for comments. We exit loop
                     }
-                    //results += "</" + parser.getName() + ">";
                     break;
                 case XmlPullParser.START_TAG:
                     // If this is a start tag. we need to determine if it is a comment tag
@@ -123,11 +124,13 @@ public class ApacheDetailedXmlParser {
                     parser.next(); // Skip to end of message tag
 
                     // Update Nodes
-                    CommentNode child = new CommentNode(user,commentScore,messageString,curNode);
+                    CommentNode child = new CommentNode(user,commentScore,messageString,curNode,depth);
+                    commentTree.addToIndexList(child);
+                    child.setIndex(curIndex);
                     curNode.addChild(child);
                     curNode = child;
                     depth++;
-                    // results += "<" + parser.getName() + ">";
+                    curIndex++;
                     break;
                 case XmlPullParser.TEXT:
                     String tagText = parser.getText();
@@ -140,11 +143,13 @@ public class ApacheDetailedXmlParser {
             }
         }
 
-        CommentNode testNode = new CommentNode("test",0,results,root);
-        //root.addChild(testNode);
         return commentTree;
 
     }
+
+    /*
+
+    ********* USELESS SHIT I THINK
 
 
     // Parses the contents of an message. If it encounters a user, timestamp, or link tag, hands them off
@@ -156,7 +161,7 @@ public class ApacheDetailedXmlParser {
         String title = null;
         int score = 0;
         int commentNum = 0;
-        int id = 0;
+        String id = "null";
 
         id = readID(parser);
         while (parser.next() != XmlPullParser.END_TAG) {
@@ -205,19 +210,10 @@ public class ApacheDetailedXmlParser {
         return timestamp;
     }
 
-    // For the tags user and timestamp, extracts their text values.
-    private String readText(XmlPullParser parser) throws IOException, XmlPullParserException {
-        String result = "";
-        if (parser.next() == XmlPullParser.TEXT) {
-            result = parser.getText();
-            parser.nextTag();
-        }
-        return result;
-    }
 
     // Reads the thread ID attribute string and parses it into an Integer
-    private int readID(XmlPullParser parser) throws IOException, XmlPullParserException {
-        return Integer.valueOf(parser.getAttributeValue(ns,"id"));
+    private String readID(XmlPullParser parser) throws IOException, XmlPullParserException {
+        return String.valueOf(parser.getAttributeValue(ns,"id"));
     }
 
     // Reads the score attribute string and parses it into an Integer
@@ -234,6 +230,19 @@ public class ApacheDetailedXmlParser {
         String comments = readText(parser);
         parser.require(XmlPullParser.END_TAG, ns, "comments");
         return Integer.valueOf(comments);
+    }
+
+    */
+
+
+    // For the tags user and timestamp, extracts their text values.
+    private String readText(XmlPullParser parser) throws IOException, XmlPullParserException {
+        String result = "";
+        if (parser.next() == XmlPullParser.TEXT) {
+            result = parser.getText();
+            parser.nextTag();
+        }
+        return result;
     }
 
     private void skip(XmlPullParser parser) throws XmlPullParserException, IOException {

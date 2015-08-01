@@ -93,7 +93,8 @@ public class ApacheXmlParser {
         String title = null;
         int score = 0;
         int commentNum = 0;
-        int id = 0;
+        String id = "null";
+        String thumbnail = "null";
 
         id = readID(parser);
         while (parser.next() != XmlPullParser.END_TAG) {
@@ -111,11 +112,13 @@ public class ApacheXmlParser {
                 score = readScore(parser);
             } else if (name.equals("comments")) {
                 commentNum = readCommentNum(parser);
+            } else if (name.equals("thumbnail")) {
+                thumbnail = readThumbnail(parser);
             } else {
                 skip(parser);
             }
         }
-        return new RThread(user, timestamp, title, score, commentNum, id);
+        return new RThread(user, timestamp, title, score, commentNum, id, thumbnail);
     }
 
     // Processes user tags in the feed.
@@ -153,8 +156,8 @@ public class ApacheXmlParser {
     }
 
     // Reads the thread ID attribute string and parses it into an Integer
-    private int readID(XmlPullParser parser) throws IOException, XmlPullParserException {
-        return Integer.valueOf(parser.getAttributeValue(ns,"id"));
+    private String readID(XmlPullParser parser) throws IOException, XmlPullParserException {
+        return String.valueOf(parser.getAttributeValue(ns,"id"));
     }
 
     // Reads the score attribute string and parses it into an Integer
@@ -171,6 +174,15 @@ public class ApacheXmlParser {
         String comments = readText(parser);
         parser.require(XmlPullParser.END_TAG, ns, "comments");
         return Integer.valueOf(comments);
+    }
+
+
+    // Processes user tags in the feed.
+    private String readThumbnail(XmlPullParser parser) throws IOException, XmlPullParserException {
+        parser.require(XmlPullParser.START_TAG, ns, "thumbnail");
+        String tnail = readText(parser);
+        parser.require(XmlPullParser.END_TAG, ns, "thumbnail");
+        return tnail;
     }
 
     private void skip(XmlPullParser parser) throws XmlPullParserException, IOException {

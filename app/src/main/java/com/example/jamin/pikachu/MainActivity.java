@@ -5,6 +5,8 @@ import android.app.ActionBar;
 import android.app.Activity;
 import android.app.ListActivity;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.media.Image;
@@ -39,6 +41,8 @@ public class MainActivity extends ListActivity {
     private RThreadDatabase rThreadDatabase;
     public static final String EXTRA_MESSAGE = "com.example.pikachu.jamin.MESSAGE";
     public static final String EXTRA_TITLE = "com.example.pikachu.jamin.TITLE";
+    public static final String EXTRA_COMMENTSNUM = "com.example.pikachu.jamin.COMMENTSNUM";
+    public static final String EXTRA_SCORE = "com.example.pikachu.jamin.SCORE";
     protected static final String TARGET_LINK = "http://107.200.40.169:81/";
     private CustomAdapter mAdapter;
 
@@ -64,12 +68,15 @@ public class MainActivity extends ListActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Intent intent = new Intent(getApplicationContext(),DisplayMessageActivity.class);
-                TextView titleView = (TextView) view.findViewById(R.id.list_row_main_title);
-                String title = titleView.getText().toString();//"Position: " + String.valueOf(position);
+                String title = ((TextView) view.findViewById(R.id.list_row_main_title)).getText().toString();//"Position: " + String.valueOf(position);
+                String commentsNum = ((TextView) view.findViewById(R.id.list_row_main_comments)).getText().toString();
+                String score = ((TextView) view.findViewById(R.id.list_row_main_score)).getText().toString();
                 String message = "001";// SAMPLE hash
                 //based on item add info to intent
                 intent.putExtra(EXTRA_TITLE,title);
                 intent.putExtra(EXTRA_MESSAGE,message);
+                intent.putExtra(EXTRA_COMMENTSNUM,commentsNum);
+                intent.putExtra(EXTRA_SCORE,score);
                 startActivity(intent);
             }
 
@@ -98,7 +105,6 @@ public class MainActivity extends ListActivity {
         public View getView(int position, View convertView, ViewGroup parent) {
             if (convertView == null) {
                  convertView = getLayoutInflater().inflate(R.layout.list_row_main,parent,false);
-
             }
 
 
@@ -118,7 +124,7 @@ public class MainActivity extends ListActivity {
             convertView.setBackgroundColor(Color.CYAN);
 
             TextView score = (TextView) convertView.findViewById(R.id.list_row_main_score);
-            ImageView avatar = (ImageView) convertView.findViewById(R.id.list_row_main_avatar);
+            ImageView thumbnail = (ImageView) convertView.findViewById(R.id.list_row_main_avatar);
             TextView title = (TextView) convertView.findViewById(R.id.list_row_main_title);
             TextView comments = (TextView) convertView.findViewById(R.id.list_row_main_comments);
             TextView placeholder = (TextView) convertView.findViewById(R.id.list_row_main_comments_placeholder);
@@ -143,8 +149,8 @@ public class MainActivity extends ListActivity {
             score.getLayoutParams().width = scoreWidth;
             score.getLayoutParams().height = scoreHeight;
 
-            avatar.getLayoutParams().width = avatarWidth;
-            avatar.getLayoutParams().height = avatarHeight;
+            thumbnail.getLayoutParams().width = avatarWidth;
+            thumbnail.getLayoutParams().height = avatarHeight;
 
             rLayout.getLayoutParams().width = rLayoutWidth;
             rLayout.getLayoutParams().height = rLayoutHeight;
@@ -156,8 +162,6 @@ public class MainActivity extends ListActivity {
 
             //placeholder.getLayoutParams().height = placeholderHeight;
 
-            avatar.setBackgroundColor(Color.GREEN);
-
             // Substituting the strings into the coressponding fields
             RThread curRThread = rThreadDatabase.getRThread(position);
             int scoreVal = curRThread.getScore();
@@ -168,6 +172,18 @@ public class MainActivity extends ListActivity {
             score.setText(String.valueOf(scoreVal));
             title.setText(curRThread.getTitle());
             comments.setText(String.valueOf(curRThread.getCommentNum()));
+
+            // Setting thumbnail hyperlink
+            String thumbnailString = curRThread.getThumbnail();
+
+            if (thumbnailString.length() == 0) { // If there is no thumbnail in this thread, we use layout/list_row_main2.xml, otherweise we use ...main.xml
+                // Do nothing
+            } else {
+                // Or else we fetch the thumbnail from the hyperlink
+                new DownloadThumbnailTask(thumbnail).execute(thumbnailString);
+            }
+
+
 
             /*
             //((TextView) convertView.findViewById(R.id.list_row_main_body)).setText(getItem(position));
@@ -268,6 +284,44 @@ public class MainActivity extends ListActivity {
             }
         }
 
+    }
+
+
+    private class DownloadThumbnailTask extends AsyncTask<String, Void, Bitmap> {
+        ImageView thumbnailImage; // this is to keep reference to the thumbnail layout
+
+        public DownloadThumbnailTask(ImageView image) {
+            this.thumbnailImage = image;
+        }
+
+        protected Bitmap doInBackground(String... urls) {
+            String urlLink = urls[0];
+            Bitmap bMap = null;
+            InputStream is = null;
+
+            try {
+                is = new java.net.URL(urlLink).openStream();
+                bMap = BitmapFactory.decodeStream(is);
+            } catch (Exception e) {
+                Log.e("Error", e.getMessage());
+                e.printStackTrace();
+            } finally {
+                // Complicated shit to close the InputStream
+                try {
+                    if (is != null) {
+                        is.close();
+                    }
+                } catch (IOException e) {
+                    Log.e("Error", e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+            return bMap;
+        }
+
+        protected void onPostExecute(Bitmap result) {
+            thumbnailImage.setImageBitmap(result);
+        }
     }
 
 

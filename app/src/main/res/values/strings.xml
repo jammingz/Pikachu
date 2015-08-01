@@ -4,4 +4,6 @@
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="title_activity_display_message">Detailed Message</string>
+    <string name="comment_string">comments</string>
+    <string name="points_string">points</string>
 </resources>
